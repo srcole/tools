@@ -8,6 +8,8 @@ Miscellaneous functions for spectral analysis
 4. calcpow: calculate the power in a frequency band
 5. firfedge: band-pass filter a signal with an FIR filter and don't remove edge artifacts
 6. myhipass: high-pass filter a signal with an FIR filter
+7. notch: notch filtera signal with an FIR filter
+8. rmvedge: remove edges from a signal prone to artifacts
 """
 
 from __future__ import division
@@ -178,15 +180,36 @@ def firfedge(x, f_range, fs=1000, w=3):
     x_filt : array-like, 1d
         Filtered time series
     """
-    from scipy.signal import firwin, filtfilt
     nyq = np.float(fs / 2)
     Ntaps = np.floor(w * fs / f_range[0])
-    taps = firwin(Ntaps, np.array(f_range) / nyq, pass_zero=False)
-    return filtfilt(taps, [1], x)
+    taps = sp.signal.firwin(Ntaps, np.array(f_range) / nyq, pass_zero=False)
+    return sp.signal.filtfilt(taps, [1], x)
 
     
 def myhipass(x,cf,Fs, w = 3):
-    from scipt.signal import firwin, filtfilt
     numtaps = w * Fs / np.float(cf)
-    taps = firwin(numtaps, cf / np.float(Fs) * 2, pass_zero=False)
-    return filtfilt(taps,[1],x)
+    taps = sp.signal.firwin(numtaps, cf / np.float(Fs) * 2, pass_zero=False)
+    return sp.signal.filtfilt(taps,[1],x)
+
+
+def notch(x, cf, bw, Fs=1000, order=3):
+    '''
+    Notch Filter the time series x with a butterworth with center frequency cf
+    and bandwidth bw
+    '''
+    nyq_rate = Fs / 2.0
+    f_range = [cf - bw / 2.0, cf + bw / 2.0]
+    Wn = (f_range[0] / nyq_rate, f_range[1] / nyq_rate)
+    b, a = sp.signal.butter(order, Wn, 'bandstop')
+    return sp.signal.filtfilt(b, a, x)
+
+def rmvedge(x, cf, Fs, w = 3):
+    """
+    Calculate the number of points to remove for edge artifacts
+    x : array
+        time series to remove edge artifacts from
+    N : int
+        length of filter
+    """
+    N = np.int(np.floor(w * Fs / cf))
+    return x[N:-N]
