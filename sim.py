@@ -10,6 +10,7 @@ spikes2lfp : Convolve a spike train with a synaptic potential to simulate a loca
 from __future__ import division
 import numpy as np
 import scipy as sp
+from scipy import signal
 
 def pha2r(pha, method, mod_frac, firing_rate, sqprc=10.0, normstd = 1):
     '''
@@ -77,9 +78,9 @@ def simphase(T, flo, dt=.001, returnwave=False):
     theta = firfedge(whitenoise, flo, fs=1/dt, w=3)
     
     if returnwave:
-        return np.angle(sp.signal.hilbert(theta[1/dt:(T+1)/dt])), theta[1/dt:(T+1)/dt]
+        return np.angle(signal.hilbert(theta[1/dt:(T+1)/dt])), theta[1/dt:(T+1)/dt]
     else:
-        return np.angle(sp.signal.hilbert(theta[1/dt:(T+1)/dt]))
+        return np.angle(signal.hilbert(theta[1/dt:(T+1)/dt]))
     
 
 def spikes2lfp(spikes,

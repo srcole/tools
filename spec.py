@@ -15,6 +15,7 @@ Miscellaneous functions for spectral analysis
 from __future__ import division
 import numpy as np
 import scipy as sp
+from scipy import signal
 import matplotlib.pyplot as plt
     
 
@@ -182,14 +183,14 @@ def firfedge(x, f_range, fs=1000, w=3):
     """
     nyq = np.float(fs / 2)
     Ntaps = np.floor(w * fs / f_range[0])
-    taps = sp.signal.firwin(Ntaps, np.array(f_range) / nyq, pass_zero=False)
-    return sp.signal.filtfilt(taps, [1], x)
+    taps = signal.firwin(Ntaps, np.array(f_range) / nyq, pass_zero=False)
+    return signal.filtfilt(taps, [1], x)
 
     
 def myhipass(x,cf,Fs, w = 3):
     numtaps = w * Fs / np.float(cf)
-    taps = sp.signal.firwin(numtaps, cf / np.float(Fs) * 2, pass_zero=False)
-    return sp.signal.filtfilt(taps,[1],x)
+    taps = signal.firwin(numtaps, cf / np.float(Fs) * 2, pass_zero=False)
+    return signal.filtfilt(taps,[1],x)
 
 
 def notch(x, cf, bw, Fs=1000, order=3):
@@ -200,8 +201,8 @@ def notch(x, cf, bw, Fs=1000, order=3):
     nyq_rate = Fs / 2.0
     f_range = [cf - bw / 2.0, cf + bw / 2.0]
     Wn = (f_range[0] / nyq_rate, f_range[1] / nyq_rate)
-    b, a = sp.signal.butter(order, Wn, 'bandstop')
-    return sp.signal.filtfilt(b, a, x)
+    b, a = signal.butter(order, Wn, 'bandstop')
+    return signal.filtfilt(b, a, x)
 
 def rmvedge(x, cf, Fs, w = 3):
     """
