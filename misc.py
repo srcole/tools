@@ -6,6 +6,7 @@ resample_coupling: calculate significance with resampling
 _z2p: convert z score to p value
 getjetrgb: get the color values to plot in jet colors
 linfit - calculate the linear fit of 2D data
+regressout - regress 1 variable out of another
 norm01 - normalize a series of numbers to have a minimum of 0 and max of 1
 
 added some new functions that need to be formatted especially:
@@ -55,6 +56,10 @@ def linfit(x,y):
     xs = np.array([np.min(x),np.max(x)])
     yfit = mb[1] + xs*mb[0]
     return xs, yfit
+    
+def regressout(x,y):
+    mb = np.polyfit(x,y,1)
+    return y - mb[1] - x*mb[0]
     
     
 def norm01(x):
