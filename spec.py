@@ -249,7 +249,7 @@ def nmppc(x, flo, fhi, nm, Fs):
     
     phadiffnm = phalo*nm[1] - phahi*nm[0]
     
-    plf = np.sum(np.exp(1j*phadiffnm))
+    plf = np.abs(np.mean(np.exp(1j*phadiffnm)))
     return plf
     
     
