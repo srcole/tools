@@ -39,7 +39,7 @@ def pha2r(pha, method, mod_frac, firing_rate, sqprc=10.0, normstd = 1):
     '''
     # Generate time series of desired shape with mean 1 (1Hz)
     if method == 'sin':
-        r_dep = np.sin(pha) + 1
+        r_dep = np.sin(pha+np.pi/2) + 1
         
     elif method == 'sq':
         sqpha_thresh = np.percentile(pha,sqprc)

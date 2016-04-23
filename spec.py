@@ -10,6 +10,7 @@ Miscellaneous functions for spectral analysis
 6. myhipass: high-pass filter a signal with an FIR filter
 7. notch: notch filtera signal with an FIR filter
 8. rmvedge: remove edges from a signal prone to artifacts
+9. nmppc: n:m phase-phase coupling
 """
 
 from __future__ import division
@@ -214,3 +215,79 @@ def rmvedge(x, cf, Fs, w = 3):
     """
     N = np.int(np.floor(w * Fs / cf))
     return x[N:-N]
+    
+def nmppc(x, flo, fhi, nm, Fs):
+    """
+    Calculate n:m phase-phase coupling between two oscillations
+    Method from Palva et al., 2005 J Neuro
+    * Morlet filter for the two frequencies
+    * Use Hilbert to calculate phase and amplitude
+    
+    Parameters
+    ----------
+    x : np array
+        time series of interest
+    flo : 2-element list
+        low and high cutoff frequencies for the low frequency band of interest
+    fhi : 2-element list
+        low and high cutoff frequencies for the high frequency band of interest
+    nm : 2-element list of ints (n,m)
+        n:m is the ratio of low frequency to high frequency (e.g. if flo ~= 8 and fhi ~= 24, then n:m = 1:3)
+    Fs : float
+        Sampling rate
+        
+    Returns
+    -------
+    plf : float
+        n:m phase-phase coupling value (phase-locking factor)
+    """
+    
+    from pacpy.pac import pa_series, _trim_edges
+    phalo, _ = pa_series(x, x, flo, flo, fs = Fs)
+    phahi, _ = pa_series(x, x, fhi, fhi, fs = Fs)
+    phalo, phahi = _trim_edges(phalo, phahi)
+    
+    phadiffnm = phalo*nm[1] - phahi*nm[0]
+    
+    plf = np.sum(np.exp(1j*phadiffnm))
+    return plf
+    
+    
+def nmppcmany(x, floall, bw, M, Fs):
+    """Calculate n:m coupling for many frequencies and values of 'm' for
+    a single signal"""
+    n_flo = len(floall)
+    plfs = np.zeros((n_flo,M-1))
+    for f in range(n_flo):
+        for midx in range(M-1):
+            m = midx + 2
+            flo = (floall[f]-bw,floall[f]+bw)
+            fhi = (floall[f]*m-m*bw,floall[f]*m+m*bw)
+            plfs[f,midx] = nmppc(x, flo, fhi, (1,m),Fs)
+            
+    return plfs
+    
+
+def nmppcplot(plfs, floall, M, bw):
+    import matplotlib.pyplot as plt
+    from matplotlib import cm
+    
+    # Realign plfs
+    plfs2 = np.zeros((len(floall)+1,M))
+    plfs2[:len(floall),:M-1] = plfs
+
+    clim1 = (0,1)
+    plt.figure(figsize=(5,5))
+    cax = plt.pcolor(range(2,M+2), np.append(floall,100), plfs2, cmap=cm.jet)
+    cbar = plt.colorbar(cax, ticks=clim1)
+    cbar.ax.set_yticklabels(clim1,size=20)
+    cbar.ax.set_ylabel('Phase locking factor', size=20)
+    plt.clim(clim1)
+    plt.axis([2, M+1, floall[0],floall[-1]+10])
+    plt.xlabel('M', size=20)
+    plt.ylabel('Frequency (Hz)', size=20)
+    ax = plt.gca()
+    ax.set_yticks(np.array(floall)+bw)
+    ax.set_yticklabels(["%d" % n for n in floall],size=20)
+    plt.xticks(np.arange(2.5,M+1),["%d" % n for n in np.arange(2,M+1)],size=20)
+    plt.tight_layout()
