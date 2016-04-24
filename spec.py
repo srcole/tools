@@ -261,8 +261,8 @@ def nmppcmany(x, floall, bw, M, Fs):
     for f in range(n_flo):
         for midx in range(M-1):
             m = midx + 2
-            flo = (floall[f]-bw,floall[f]+bw)
-            fhi = (floall[f]*m-m*bw,floall[f]*m+m*bw)
+            fhi = (floall[f]-bw,floall[f]+bw)
+            flo = (floall[f]/m-bw/m,floall[f]/m+bw/m)
             plfs[f,midx] = nmppc(x, flo, fhi, (1,m),Fs)
             
     return plfs
