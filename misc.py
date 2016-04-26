@@ -8,6 +8,7 @@ getjetrgb: get the color values to plot in jet colors
 linfit - calculate the linear fit of 2D data
 regressout - regress 1 variable out of another
 norm01 - normalize a series of numbers to have a minimum of 0 and max of 1
+pearsonr2p - calculate the p-value for a pearson correlation
 
 added some new functions that need to be formatted especially:
 pdf2text - extract text from a pdf
@@ -64,6 +65,16 @@ def regressout(x,y):
     
 def norm01(x):
     return (x - np.min(x))/(np.max(x)-np.min(x))
+    
+
+def pearsonp(r, n):
+    from scipy.stats import betai
+    if abs(r) == 1:
+        return 0
+    else:
+        df = n-2
+        t_squared = r*r * (df / ((1.0 - r) * (1.0 + r)))
+        return betai(0.5*df, 0.5, df / (df + t_squared))
     
     
 def pdf2text(filename):

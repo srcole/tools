@@ -8,8 +8,6 @@ bar : create a bar chart with error bars
 import numpy as np
 import scipy as sp
 import matplotlib.pyplot as plt
-import seaborn as sns
-sns.set(style="whitegrid")
 
 def bar(y, yerr, xlab, ylab,
             y2 = None, yerr2 = None, legend = None,
