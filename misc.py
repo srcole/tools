@@ -8,7 +8,7 @@ getjetrgb: get the color values to plot in jet colors
 linfit - calculate the linear fit of 2D data
 regressout - regress 1 variable out of another
 norm01 - normalize a series of numbers to have a minimum of 0 and max of 1
-pearsonr2p - calculate the p-value for a pearson correlation
+pearsonp - calculate the p-value for a pearson correlation form r and n
 
 added some new functions that need to be formatted especially:
 pdf2text - extract text from a pdf

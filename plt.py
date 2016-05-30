@@ -3,6 +3,11 @@
 Miscellaneous functions for plotting
 
 bar : create a bar chart with error bars
+viztime
+scatt_2cond
+unpair_2cond
+viz_ecog
+scatt_corr
 """
 
 import numpy as np
@@ -28,12 +33,12 @@ def bar(y, yerr, xlab, ylab,
         x_width = .8 / np.float(Nextra+1)
     
     plt.figure(figsize=figsize)
-    plt.bar(x,y,x_width, color='b', yerr=yerr,ecolor='k')
+    plt.bar(x,y,x_width, color='k', yerr=yerr,ecolor='k')
     if y2 is not None:
         if Nextra == 1:
             plt.bar(x+x_width,y2,x_width, color='r', yerr=yerr2,ecolor='k')
         else:
-            colorlist = ('r','g','y','c','k')
+            colorlist = ('r','b','g','y','c')
             for e in range(Nextra):
                 plt.bar(x+x_width*(e+1),y2[e],x_width,color=colorlist[e], yerr=yerr2[e],ecolor='k')
         plt.legend(legend, loc='best',fontsize=fontsize)
@@ -44,7 +49,7 @@ def bar(y, yerr, xlab, ylab,
     plt.xlim((x[0]-x_width,x[-1]+x_width*(Nextra+2)))
     plt.ylim(ylim)
     
-    plt.yticks(ylim,visible=yticksvis)
+    plt.yticks(ylim,visible=yticksvis,size=fontsize)
     plt.ylabel(ylab,size=fontsize)
     
     plt.tight_layout()

@@ -11,6 +11,7 @@ Miscellaneous functions for spectral analysis
 7. notch: notch filtera signal with an FIR filter
 8. rmvedge: remove edges from a signal prone to artifacts
 9. nmppc: n:m phase-phase coupling
+10. morletT: continuous morlet transform (uses morletf)
 """
 
 from __future__ import division
@@ -60,7 +61,7 @@ def fftmed(x, Fs=1000, Hzmed=10, zeropad=False, usehanning = False, usemedfilt =
         rawfft = np.fft.fft(x*win)
     else:
         rawfft = np.fft.fft(x)
-    psd = np.abs(rawfft[:len(f)]**2)
+    psd = np.abs(rawfft[:len(f)])**2
     
     # Median filter
     if usemedfilt:
@@ -291,3 +292,87 @@ def nmppcplot(plfs, floall, M, bw):
     ax.set_yticklabels(["%d" % n for n in floall],size=20)
     plt.xticks(np.arange(2.5,M+1),["%d" % n for n in np.arange(2,M+1)],size=20)
     plt.tight_layout()
+    
+    
+def morletT(x, f0s, w = 7, fs = 1000, s = 1):
+    """
+    Calculate the time-frequency representation of the signal 'x' over the
+    frequencies in 'f0s' using morlet wavelets
+    Parameters
+    ----------
+    x : array
+        time series
+    f0s : array
+        frequency axis
+    w : float
+        Length of the filter in terms of the number of cycles of the oscillation
+        whose frequency is the center of the bandpass filter
+    Fs : float
+        Sampling rate
+    s : float
+        Scaling factor
+    Returns
+    -------
+    mwt : 2-D array
+        time-frequency representation of signal x
+    """
+    if w <= 0:
+        raise ValueError('Number of cycles in a filter must be a positive number.')
+        
+    T = len(x)
+    F = len(f0s)
+    mwt = np.zeros([F,T],dtype=complex)
+    for f in range(F):
+        mwt[f] = morletf(x, f0s[f], fs = fs, w = w, s = s)
+
+    return mwt
+
+
+def morletf(x, f0, fs = 1000, w = 7, s = 1, M = None, norm = 'sss'):
+    """
+    Convolve a signal with a complex wavelet
+    The real part is the filtered signal
+    Taking np.abs() of output gives the analytic amplitude
+    Taking np.angle() of output gives the analytic phase
+    x : array
+        Time series to filter
+    f0 : float
+        Center frequency of bandpass filter
+    Fs : float
+        Sampling rate
+    w : float
+        Length of the filter in terms of the number of cycles of the oscillation
+        with frequency f0
+    s : float
+        Scaling factor for the morlet wavelet
+    M : integer
+        Length of the filter. Overrides the f0 and w inputs
+    norm : string
+        Normalization method
+        'sss' - divide by the sqrt of the sum of squares of points
+        'amp' - divide by the sum of amplitudes divided by 2
+    Returns
+    -------
+    x_trans : array
+        Complex time series
+    """
+    if w <= 0:
+        raise ValueError('Number of cycles in a filter must be a positive number.')
+        
+    if M == None:
+        M = 2 * s * w * fs / f0
+
+    morlet_f = sp.signal.morlet(M, w = w, s = s)
+    morlet_f = morlet_f
+    
+    if norm == 'sss':
+        morlet_f = morlet_f / np.sqrt(np.sum(np.abs(morlet_f)**2))
+    elif norm == 'abs':
+        morlet_f = morlet_f / np.sum(np.abs(morlet_f))*2
+    else:
+        raise ValueError('Not a valid wavelet normalization method.')
+
+    mwt_real = np.convolve(x, np.real(morlet_f), mode = 'same')
+    mwt_imag = np.convolve(x, np.imag(morlet_f), mode = 'same')
+
+    return mwt_real + 1j*mwt_imag
