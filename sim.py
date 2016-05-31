@@ -74,13 +74,13 @@ def simphase(T, flo, dt=.001, returnwave=False):
         option to return the simulated oscillation
     """
     from tools.spec import firfedge
-    whitenoise = np.random.rand((T+2)/dt)
+    whitenoise = np.random.rand(int((T+2)/dt))
     theta = firfedge(whitenoise, flo, fs=1/dt, w=3)
     
     if returnwave:
-        return np.angle(signal.hilbert(theta[1/dt:(T+1)/dt])), theta[1/dt:(T+1)/dt]
+        return np.angle(signal.hilbert(theta[int(1/dt):int((T+1)/dt)])), theta[int(1/dt):int((T+1)/dt)]
     else:
-        return np.angle(signal.hilbert(theta[1/dt:(T+1)/dt]))
+        return np.angle(signal.hilbert(theta[int(1/dt):int((T+1)/dt)]))
     
 
 def spikes2lfp(spikes,
