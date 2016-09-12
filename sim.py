@@ -10,7 +10,6 @@ spikes2lfp : Convolve a spike train with a synaptic potential to simulate a loca
 from __future__ import division
 import numpy as np
 import scipy as sp
-from scipy import signal
 
 def pha2r(pha, method, mod_frac, firing_rate, sqprc=10.0, normstd = 1):
     '''
@@ -57,7 +56,7 @@ def pha2r(pha, method, mod_frac, firing_rate, sqprc=10.0, normstd = 1):
     return r_dep + r_indep
 
 
-def simphase(T, flo, dt=.001, returnwave=False):
+def simphase(T, flo, w=3, dt=.001, randseed = 0, returnwave=False):
     """ Simulate the phase of an oscillation
     The first and last second of the oscillation are simulated and taken out
     in order to avoid edge artifacts in the simulated phase
@@ -73,14 +72,16 @@ def simphase(T, flo, dt=.001, returnwave=False):
     returnwave : boolean
         option to return the simulated oscillation
     """
-    from tools.spec import firfedge
-    whitenoise = np.random.rand(int((T+2)/dt))
-    theta = firfedge(whitenoise, flo, fs=1/dt, w=3)
+    from tools.spec import bandpass_default
+    np.random.seed(randseed)
+    whitenoise = np.random.randn(int((T+2)/dt))
+    theta, _ = bandpass_default(whitenoise, flo, 1/dt, rmv_edge = False, w = w)
+    print theta
     
     if returnwave:
-        return np.angle(signal.hilbert(theta[int(1/dt):int((T+1)/dt)])), theta[int(1/dt):int((T+1)/dt)]
+        return np.angle(sp.signal.hilbert(theta[int(1/dt):int((T+1)/dt)])), theta[int(1/dt):int((T+1)/dt)]
     else:
-        return np.angle(signal.hilbert(theta[int(1/dt):int((T+1)/dt)]))
+        return np.angle(sp.signal.hilbert(theta[int(1/dt):int((T+1)/dt)]))
     
 
 def spikes2lfp(spikes,
@@ -90,3 +91,35 @@ def spikes2lfp(spikes,
     t_dexp = np.arange(Tpsp)
     psp = gmax * (np.exp(-t_dexp/tau_decay) - np.exp(-t_dexp/tau_rise))
     return np.convolve(spikes, psp, mode='same')
+    
+
+def simbrown(N, randseed = 0):
+    """Simulate a brown noise signal (power law distribution 1/f^2)
+    with N samples"""
+    np.random.seed(randseed)
+    wn = np.random.randn(N)
+    return np.cumsum(wn)
+    
+
+def simfiltonef(T, f_range, Fs, N, samp_buffer = 10000, randseed = 0):
+    """ Simulate a band-pass filtered signal with 1/f^2 
+    
+    Parameters
+    ----------
+    T : float
+        length of time of simulated oscillation
+    Fs : float
+        oscillation sampling rate
+    f_range : 2-element array (lo,hi)
+        frequency range of simulated data
+    N : int
+        order of filter
+    """
+    # Generate 1/f^2 noise
+    brownN = simbrown(int(T*Fs+N*2), randseed = randseed)
+    
+    # Filter
+    nyq = Fs / 2.
+    taps = sp.signal.firwin(N, np.array(f_range) / nyq, pass_zero=False)
+    brownNf = sp.signal.filtfilt(taps, [1], brownN)
+    return brownNf[N:-N]

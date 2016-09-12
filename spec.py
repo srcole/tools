@@ -2,6 +2,7 @@
 """
 Miscellaneous functions for spectral analysis
 
+0. bandpass_default: default bandpass filter
 1. fftmed: calculate the PSD by taking fourier transform followed by median filter
 2. slope: calculate slope of power spectrum
 3. centerfreq: calculate the center frequency of an oscillation
@@ -12,6 +13,7 @@ Miscellaneous functions for spectral analysis
 8. rmvedge: remove edges from a signal prone to artifacts
 9. nmppc: n:m phase-phase coupling
 10. morletT: continuous morlet transform (uses morletf)
+11. plot_filter: plot the frequency respponse of a filter
 """
 
 from __future__ import division
@@ -19,9 +21,67 @@ import numpy as np
 import scipy as sp
 from scipy import signal
 import matplotlib.pyplot as plt
-    
 
-def fftmed(x, Fs=1000, Hzmed=10, zeropad=False, usehanning = False, usemedfilt = True):
+
+def bandpass_default(x, f_range, Fs, rmv_edge = True, w = 3, plot_frequency_response = False):
+    """
+    Default bandpass filter
+    
+    Parameters
+    ----------
+    x : array-like 1d
+        voltage time series
+    f_range : (low, high), Hz
+        frequency range for narrowband signal of interest
+    Fs : float
+        The sampling rate
+    w : float
+        Length of filter order, in cycles. Filter order = ceil(Fs * w / f_range[0])
+        
+    Returns
+    -------
+    x_filt : array-like 1d
+        filtered time series
+    taps : array-like 1d
+        filter kernel
+    """
+    
+    # Design filter
+    from scipy import signal
+    Ntaps = np.ceil(Fs*w/f_range[0])
+    # Force Ntaps to be odd
+    if Ntaps % 2 == 0:
+        Ntaps = Ntaps + 1
+    taps = sp.signal.firwin(Ntaps, np.array(f_range) / (Fs/2.), pass_zero=False)
+    
+    # Apply filter
+    x_filt = np.convolve(taps,x,'same')
+    
+    # Plot frequency response
+    if plot_frequency_response:
+        w, h = signal.freqz(taps)
+        
+        import matplotlib.pyplot as plt
+        plt.figure(figsize=(10,5))
+        plt.subplot(1,2,2)
+        plt.title('Kernel')
+        plt.plot(taps)
+        
+        plt.subplot(1,2,1)
+        plt.plot(w*Fs/(2.*np.pi), 20 * np.log10(abs(h)), 'b')
+        plt.title('Frequency response')
+        plt.ylabel('Attenuation (dB)', color='b')
+        plt.xlabel('Frequency (Hz)')
+
+    # Remove edge artifacts
+    N_rmv = int(Ntaps/2.)
+    if rmv_edge:
+        return x_filt[N_rmv:-N_rmv], Ntaps
+    else:
+        return x_filt, taps
+
+
+def fftmed(x, Fs=1000, Hzmed=0, zeropad=False, usehanning = False, usemedfilt = True):
     '''
     Calculate the power spectrum of a signal by first taking its FFT and then
     applying a median filter
@@ -65,9 +125,8 @@ def fftmed(x, Fs=1000, Hzmed=10, zeropad=False, usehanning = False, usemedfilt =
     
     # Median filter
     if usemedfilt:
-        from scipy.signal import medfilt
         sampmed = np.argmin(np.abs(f-Hzmed/2.0))
-        psd = medfilt(psd,sampmed*2+1)
+        psd = signal.medfilt(psd,sampmed*2+1)
     
     return f, psd
 
@@ -111,7 +170,7 @@ def slope(f, psd, fslopelim = (80,200), flatten_thresh = 0):
     mask = (psd_flat / psd_flat.max()) < flatten_thresh
     psd_flat[mask] = 0
     slopes = lm.estimator_.coef_
-    slopes = slopes[0][0]
+    slopes = slopes[0]
 
     return slopes, slopelineP, slopelineF
     
@@ -160,7 +219,7 @@ def calcpow(f, psd, flim):
         power in the range
     '''
     fidx = np.logical_and(f>=flim[0],f<=flim[1])
-    return np.sum(psd[fidx])
+    return np.sum(psd[fidx])/np.float(len(f)*2)
     
     
 def firfedge(x, f_range, fs=1000, w=3):
@@ -269,7 +328,7 @@ def nmppcmany(x, floall, bw, M, Fs):
     return plfs
     
 
-def nmppcplot(plfs, floall, M, bw):
+def nmppcplot(plfs, floall, M, bw, clim1=(0,1)):
     import matplotlib.pyplot as plt
     from matplotlib import cm
     
@@ -277,7 +336,6 @@ def nmppcplot(plfs, floall, M, bw):
     plfs2 = np.zeros((len(floall)+1,M))
     plfs2[:len(floall),:M-1] = plfs
 
-    clim1 = (0,1)
     plt.figure(figsize=(5,5))
     cax = plt.pcolor(range(2,M+2), np.append(floall,100), plfs2, cmap=cm.jet)
     cbar = plt.colorbar(cax, ticks=clim1)
@@ -362,13 +420,13 @@ def morletf(x, f0, fs = 1000, w = 7, s = 1, M = None, norm = 'sss'):
     if M == None:
         M = 2 * s * w * fs / f0
 
-    morlet_f = sp.signal.morlet(M, w = w, s = s)
+    morlet_f = signal.morlet(M, w = w, s = s)
     morlet_f = morlet_f
     
     if norm == 'sss':
         morlet_f = morlet_f / np.sqrt(np.sum(np.abs(morlet_f)**2))
     elif norm == 'abs':
-        morlet_f = morlet_f / np.sum(np.abs(morlet_f))*2
+        morlet_f = morlet_f / np.sum(np.abs(morlet_f))
     else:
         raise ValueError('Not a valid wavelet normalization method.')
 
@@ -376,3 +434,12 @@ def morletf(x, f0, fs = 1000, w = 7, s = 1, M = None, norm = 'sss'):
     mwt_imag = np.convolve(x, np.imag(morlet_f), mode = 'same')
 
     return mwt_real + 1j*mwt_imag
+    
+
+def plot_filter(taps, Fs):
+    w, h = signal.freqz(taps)
+    import matplotlib.pyplot as plt
+    plt.figure(figsize=(6,6))
+    plt.plot(w*Fs/(2.*np.pi), 20 * np.log10(abs(h)), 'b')
+    plt.ylabel('Attenuation (dByy)', color='b')
+    plt.xlabel('Frequency (Hz)')

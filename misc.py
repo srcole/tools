@@ -20,7 +20,6 @@ addenvvar - add an environmental variable
 from __future__ import division
 import numpy as np
 import scipy as sp
-from scipy import signal
 import matplotlib.pyplot as plt
 
 def resample_coupling(x1, x2, couplingfn,

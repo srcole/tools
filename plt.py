@@ -163,7 +163,9 @@ def scatt_corr(x, y, ms = 12,
     plt.plot(x,y,'k.', ms = ms)
 
     if showline:
-        raise ValueError('Implement showline')
+        from tools.misc import linfit
+        linplt = linfit(x,y)
+        plt.plot(linplt[0],linplt[1], 'k--')
 
     if showrp:
         if corrtype == 'Pearson':
@@ -176,11 +178,11 @@ def scatt_corr(x, y, ms = 12,
 
 
     plt.xlim(xlim)
-    plt.xticks(xticks,size=15)
+    plt.xticks(xticks,size=20)
     plt.xlabel(xlabel,size=20)
 
     plt.ylim(ylim)
-    plt.yticks(yticks,fontsize=15)
+    plt.yticks(yticks,fontsize=20)
     plt.ylabel(ylabel,size=20)
 
     plt.tight_layout()
