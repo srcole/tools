@@ -175,7 +175,7 @@ def slope(f, psd, fslopelim = (80,200), flatten_thresh = 0):
     return slopes, slopelineP, slopelineF
     
 
-def centerfreq(x, frange= [13,30], Fs = 1000, Hzmed = 10, plot_psd = False,
+def centerfreq(x, frange, Fs, Hzmed = 10, plot_psd = False,
                importpsd = False, f = None, psd = None):
     
     # Calculate PSD
@@ -352,7 +352,7 @@ def nmppcplot(plfs, floall, M, bw, clim1=(0,1)):
     plt.tight_layout()
     
     
-def morletT(x, f0s, w = 7, fs = 1000, s = 1):
+def morletT(x, f0s, Fs, w = 7, s = 1):
     """
     Calculate the time-frequency representation of the signal 'x' over the
     frequencies in 'f0s' using morlet wavelets
@@ -362,11 +362,11 @@ def morletT(x, f0s, w = 7, fs = 1000, s = 1):
         time series
     f0s : array
         frequency axis
+    Fs : float
+        Sampling rate
     w : float
         Length of the filter in terms of the number of cycles of the oscillation
         whose frequency is the center of the bandpass filter
-    Fs : float
-        Sampling rate
     s : float
         Scaling factor
     Returns
@@ -381,12 +381,12 @@ def morletT(x, f0s, w = 7, fs = 1000, s = 1):
     F = len(f0s)
     mwt = np.zeros([F,T],dtype=complex)
     for f in range(F):
-        mwt[f] = morletf(x, f0s[f], fs = fs, w = w, s = s)
+        mwt[f] = morletf(x, f0s[f], Fs, w = w, s = s)
 
     return mwt
 
 
-def morletf(x, f0, fs = 1000, w = 7, s = 1, M = None, norm = 'sss'):
+def morletf(x, f0, Fs, w = 7, s = 1, M = None, norm = 'sss'):
     """
     Convolve a signal with a complex wavelet
     The real part is the filtered signal
@@ -418,7 +418,7 @@ def morletf(x, f0, fs = 1000, w = 7, s = 1, M = None, norm = 'sss'):
         raise ValueError('Number of cycles in a filter must be a positive number.')
         
     if M == None:
-        M = 2 * s * w * fs / f0
+        M = 2 * s * w * Fs / f0
 
     morlet_f = signal.morlet(M, w = w, s = s)
     morlet_f = morlet_f
