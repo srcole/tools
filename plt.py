@@ -2,17 +2,18 @@
 """
 Miscellaneous functions for plotting
 
-bar : create a bar chart with error bars
-viztime
-scatt_2cond
-unpair_2cond
-viz_ecog
-scatt_corr
+1. bar : create a bar chart with error bars
+2. viztime : plot a pretty time series
+3. scatt_2cond : scatter plot that compares the x and y values for each point
+4. unpair_2cond : plot to compare the distribution of two sets of values
+5. scatt_corr : plot a correlation
+6. viz_ecog : plot multiple channels of channel x time data in an interactive plot
 """
 
 import numpy as np
 import scipy as sp
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider
 
 def bar(y, yerr, xlab, ylab,
             y2 = None, yerr2 = None, legend = None,
@@ -189,73 +190,72 @@ def scatt_corr(x, y, ms = 12,
 
     if returnax:
         return plt.gca()
-    
-    
-def vizecog(ecog, t, chanperplt = 5):
+        
+def viz_ecog(x, t,
+             Nch_plot = 6, init_t_len = 1, init_ch_start = 0, init_t_start = 0, figsize=(20,10)):
     """
-    Visualize ecog data that is ecog[channel][sample]
-    """
-    from matplotlib.widgets import Slider
+    Visualize ECoG data 
     
-    # Initial plot
-    fig, ax = plt.subplots(figsize=(20,10))
-    plt.subplots_adjust(left=0.04, right=0.96, top=0.98, bottom=0.08)
+    Parameters
+    ----------
+    x : 2-d array
+        channels by time
+    t : 1-d array
+        time indices corresponding to columns of x
+    Nch_plot : int
+        Number of channels to plot in the figure
+    init_t_len : float
+        Initial value for length of time to plot
+    init_ch_start : int
+        Initial value for the first channel plotted (channels plotted sequentially)
+    init_t_start : float
+        Initial value for start of plotting
+    """             
+             
+    # Init figure
+    fig, ax = plt.subplots(figsize=figsize)
+    plt.subplots_adjust(left=0.04, right=0.96, top=0.98, bottom=0.1)
+    
+    # make first figure
+    tplt = np.where(np.logical_and(t>=init_t_start,t<init_t_start+init_t_len))[0]
+    for ch in range(Nch_plot):
+        plt.subplot(Nch_plot,1,ch+1)
+        plt.plot(t[tplt],x[ch+init_ch_start][tplt])
+        plt.ylabel(str(ch+init_ch_start))
+        plt.xlim((t[tplt[0]],t[tplt[-1]]))
+        if ch == Nch_plot-1:
+            plt.xlabel('Time (s)')
+    
+    #% Update functions
+    def update(val):
+        cur_t_len = sTlen.val
+        cur_ch_start = int(sCh.val)
+        cur_t_start = sTstart.val
+        
+        tplt = np.where(np.logical_and(t>=cur_t_start,t<cur_t_start+cur_t_len))[0]
+        for ch in range(Nch_plot):
+            plt.subplot(Nch_plot,1,ch+1)
+            plt.cla()
+            plt.plot(t[tplt],x[ch+cur_ch_start][tplt])
+            plt.ylabel(str(ch+cur_ch_start))
+            plt.xlim((t[tplt[0]],t[tplt[-1]]))
+            if ch == Nch_plot-1:
+                plt.xlabel('Time (s)')
+            
+        fig.canvas.draw_idle()
     
     # Make sliders and buttons
     axcolor = 'lightgoldenrodyellow'
-    axDur = plt.axes([0.28, 0.01, 0.3, 0.03], axisbg=axcolor)
+    axTlen  = plt.axes([0.13, 0.01, 0.1, 0.03], axisbg=axcolor)
+    axCh = plt.axes([0.28, 0.01, 0.3, 0.03], axisbg=axcolor)
     axTstart  = plt.axes([0.65, 0.01, 0.3, 0.03], axisbg=axcolor)
     
-    sDur = Slider(axDur, '$t_{len}$', 0.1, 30, 30)
-    sTstart = Slider(axTstart, '$t_{start}$', 0, 30, valinit=0)
+    sTlen = Slider(axTlen, '$t_{len}$', 0.1, 10, valinit=init_t_len)
+    sCh = Slider(axCh, 'Chans', 0, np.shape(x)[0]-Nch_plot, valinit=init_ch_start)
+    sTstart = Slider(axTstart, '$t_{start}$', 0, 30, valinit=init_t_start)
     
-    # Time details
-    Fs = 1/np.float(t[1])
-    t_start = 0
-    t_len = 30
-    sampmax = len(ecog[0])    
-    trange = np.logical_and(t>=t_start,t<np.min([(t_start+t_len),sampmax/Fs]))
-    
-    # Channel details
-    C = len(ecog)
-    Nplt = np.ceil(C/np.float(chanperplt))
- 
-    for c in range(C):
-        if c == 0:
-            ax1 = plt.subplot(np.int(Nplt),1,np.int(np.ceil((c+1)/np.float(chanperplt))))
-            
-        elif c % chanperplt == 0:
-            ax1.legend(loc='best')
-            ax1 = plt.subplot(np.int(Nplt),1,np.int(np.ceil((c+1)/np.float(chanperplt))))
-        ax1.plot(t[trange],ecog[c][trange],label=str(c))
-    ax1.legend(loc='best')
-    
-    # Update functions
-    def update(val):
-        # Time input and details
-        t_start = sTstart.val
-        t_len = sDur.val
-        sampmax = len(ecog[0])    
-        trange = np.logical_and(t>=t_start,t<np.min([(t_start+t_len),sampmax/Fs]))
-        
-        # Channel details
-        C = len(ecog)
-        
-        # Initial plot
-        for c in range(C):
-            if c == 0:
-                ax1 = plt.subplot(np.int(Nplt),1,np.int(np.ceil((c+1)/np.float(chanperplt))))
-                ax1.cla()
-            if c % chanperplt == 0:
-                plt.legend(loc='best')
-                ax1 = plt.subplot(np.int(Nplt),1,np.int(np.ceil((c+1)/np.float(chanperplt))))
-                ax1.cla()
-            ax1.plot(t[trange],ecog[c][trange],label=str(c))
-        ax1.legend(loc='best')
-        
-        fig.canvas.draw_idle()
-    
-    sDur.on_changed(update)
+    sTlen.on_changed(update)
+    sCh.on_changed(update)
     sTstart.on_changed(update)
     
     plt.show()

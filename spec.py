@@ -3,6 +3,7 @@
 Miscellaneous functions for spectral analysis
 
 0. bandpass_default: default bandpass filter
+0a. highpass_default: default highpass filter
 1. fftmed: calculate the PSD by taking fourier transform followed by median filter
 2. slope: calculate slope of power spectrum
 3. centerfreq: calculate the center frequency of an oscillation
@@ -37,6 +38,10 @@ def bandpass_default(x, f_range, Fs, rmv_edge = True, w = 3, plot_frequency_resp
         The sampling rate
     w : float
         Length of filter order, in cycles. Filter order = ceil(Fs * w / f_range[0])
+    rmv_edge : bool
+        if True, remove edge artifacts
+    plot_frequency_response : bool
+        if True, plot the frequency response of the filter
         
     Returns
     -------
@@ -53,6 +58,68 @@ def bandpass_default(x, f_range, Fs, rmv_edge = True, w = 3, plot_frequency_resp
     if Ntaps % 2 == 0:
         Ntaps = Ntaps + 1
     taps = sp.signal.firwin(Ntaps, np.array(f_range) / (Fs/2.), pass_zero=False)
+    
+    # Apply filter
+    x_filt = np.convolve(taps,x,'same')
+    
+    # Plot frequency response
+    if plot_frequency_response:
+        w, h = signal.freqz(taps)
+        
+        import matplotlib.pyplot as plt
+        plt.figure(figsize=(10,5))
+        plt.subplot(1,2,2)
+        plt.title('Kernel')
+        plt.plot(taps)
+        
+        plt.subplot(1,2,1)
+        plt.plot(w*Fs/(2.*np.pi), 20 * np.log10(abs(h)), 'b')
+        plt.title('Frequency response')
+        plt.ylabel('Attenuation (dB)', color='b')
+        plt.xlabel('Frequency (Hz)')
+
+    # Remove edge artifacts
+    N_rmv = int(Ntaps/2.)
+    if rmv_edge:
+        return x_filt[N_rmv:-N_rmv], Ntaps
+    else:
+        return x_filt, taps
+        
+
+def highpass_default(x, fc, Fs, rmv_edge = True, Ntaps = 1001, plot_frequency_response = False):
+    """
+    Default bandpass filter
+    
+    Parameters
+    ----------
+    x : array-like 1d
+        voltage time series
+    fc : float, Hz
+        cutoff frequency for highpass filter
+    Fs : float
+        The sampling rate
+    rmv_edge : bool
+        if True, remove edge artifacts
+    Ntaps : int
+        Filter order. If even, will add 1 in order to make odd
+    plot_frequency_response : bool
+        if True, plot the frequency response of the filter
+        
+    Returns
+    -------
+    x_filt : array-like 1d
+        filtered time series
+    taps : array-like 1d
+        filter kernel
+    """
+    
+    
+    # Force Ntaps to be odd
+    if Ntaps % 2 == 0:
+        Ntaps = Ntaps + 1
+        
+    # Design filter
+    taps = sp.signal.firwin(Ntaps, fc / (Fs/2.), pass_zero=False)
     
     # Apply filter
     x_filt = np.convolve(taps,x,'same')
@@ -352,7 +419,7 @@ def nmppcplot(plfs, floall, M, bw, clim1=(0,1)):
     plt.tight_layout()
     
     
-def morletT(x, f0s, Fs, w = 7, s = 1):
+def morletT(x, f0s, Fs, w = 7, s = .5):
     """
     Calculate the time-frequency representation of the signal 'x' over the
     frequencies in 'f0s' using morlet wavelets
@@ -386,7 +453,7 @@ def morletT(x, f0s, Fs, w = 7, s = 1):
     return mwt
 
 
-def morletf(x, f0, Fs, w = 7, s = 1, M = None, norm = 'sss'):
+def morletf(x, f0, Fs, w = 7, s = .5, M = None, norm = 'sss'):
     """
     Convolve a signal with a complex wavelet
     The real part is the filtered signal
@@ -418,7 +485,7 @@ def morletf(x, f0, Fs, w = 7, s = 1, M = None, norm = 'sss'):
         raise ValueError('Number of cycles in a filter must be a positive number.')
         
     if M == None:
-        M = 2 * s * w * Fs / f0
+        M = w * Fs / f0
 
     morlet_f = signal.morlet(M, w = w, s = s)
     morlet_f = morlet_f
