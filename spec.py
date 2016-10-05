@@ -15,6 +15,8 @@ Miscellaneous functions for spectral analysis
 9. nmppc: n:m phase-phase coupling
 10. morletT: continuous morlet transform (uses morletf)
 11. plot_filter: plot the frequency respponse of a filter
+12. phaseT: calculate phase time series
+13. ampT: calculate amplitude time series
 """
 
 from __future__ import division
@@ -88,7 +90,7 @@ def bandpass_default(x, f_range, Fs, rmv_edge = True, w = 3, plot_frequency_resp
 
 def highpass_default(x, fc, Fs, rmv_edge = True, Ntaps = 1001, plot_frequency_response = False):
     """
-    Default bandpass filter
+    Default highpass filter
     
     Parameters
     ----------
@@ -510,3 +512,77 @@ def plot_filter(taps, Fs):
     plt.plot(w*Fs/(2.*np.pi), 20 * np.log10(abs(h)), 'b')
     plt.ylabel('Attenuation (dByy)', color='b')
     plt.xlabel('Frequency (Hz)')
+    
+    
+def phaseT(x, frange, Fs, rmv_edge = False, filter_fn=None, filter_kwargs=None):
+    """
+    Calculate the phase and amplitude time series
+
+    Parameters
+    ----------
+    x : array-like, 1d
+        time series
+    frange : (low, high), Hz
+        The frequency filtering range
+    Fs : float, Hz
+        The sampling rate
+    filter_fn : function
+        The filtering function, `filterfn(x, f_range, filter_kwargs)`
+    filter_kwargs : dict
+        Keyword parameters to pass to `filterfn(.)`
+
+    Returns
+    -------
+    pha : array-like, 1d
+        Time series of phase
+    """
+    
+    if filter_fn is None:
+        filter_fn = bandpass_default
+
+    if filter_kwargs is None:
+        filter_kwargs = {}
+
+
+    # Filter signal
+    xn, taps = filter_fn(x, frange, Fs, rmv_edge=rmv_edge, **filter_kwargs)
+    pha = np.angle(sp.signal.hilbert(xn))
+
+    return pha
+    
+    
+def ampT(x, frange, Fs, rmv_edge = False, filter_fn=None, filter_kwargs=None):
+    """
+    Calculate the amplitude time series
+
+    Parameters
+    ----------
+    x : array-like, 1d
+        time series
+    frange : (low, high), Hz
+        The frequency filtering range
+    Fs : float, Hz
+        The sampling rate
+    filter_fn : function
+        The filtering function, `filterfn(x, f_range, filter_kwargs)`
+    filter_kwargs : dict
+        Keyword parameters to pass to `filterfn(.)`
+
+    Returns
+    -------
+    amp : array-like, 1d
+        Time series of phase
+    """
+    
+    if filter_fn is None:
+        filter_fn = bandpass_default
+
+    if filter_kwargs is None:
+        filter_kwargs = {}
+
+
+    # Filter signal
+    xn, taps = filter_fn(x, frange, Fs, rmv_edge=rmv_edge, **filter_kwargs)
+    amp = np.abs(sp.signal.hilbert(xn))
+
+    return amp

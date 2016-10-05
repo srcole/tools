@@ -58,6 +58,7 @@ def linfit(x,y):
     return xs, yfit
     
 def regressout(x,y):
+    """Regress x out of y to get a new y value"""
     mb = np.polyfit(x,y,1)
     return y - mb[1] - x*mb[0]
     
