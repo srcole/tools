@@ -9,12 +9,15 @@ linfit - calculate the linear fit of 2D data
 regressout - regress 1 variable out of another
 norm01 - normalize a series of numbers to have a minimum of 0 and max of 1
 pearsonp - calculate the p-value for a pearson correlation form r and n
+subplot_dims - calculate dimensions for a subplot of a certain number of plots
 
 added some new functions that need to be formatted especially:
 pdf2text - extract text from a pdf
 emailme - email me when a script is done
 add2path - add a directory to the file path
 addenvvar - add an environmental variable
+
+run_pdb_on_break - run python debugger when the input function breaks
 """
 
 from __future__ import division
@@ -152,3 +155,21 @@ def addenvvar(varname, varval):
     os.environ[varname] = varval
     #print os.environ['PATH'] #or see sys.path
     #print os.environ['PDDATA']
+    
+
+def subplot_dims(N):
+    N_rows = np.floor(np.sqrt(N))
+    N_cols = np.ceil(N/N_rows)
+    return N_rows, N_cols
+    
+    
+def run_pdb_on_break(fun, args):
+    """Run a function and open up pdb when it breaks
+    """
+    import pdb, traceback, sys
+    try:
+        fun(*args)
+    except:
+        type, value, tb = sys.exc_info()
+        traceback.print_exc()
+        pdb.post_mortem(tb)

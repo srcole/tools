@@ -191,7 +191,7 @@ def scatt_corr(x, y, ms = 12,
     if returnax:
         return plt.gca()
         
-def viz_ecog(x, t,
+def viz_ecog(x, t, tmax = 30,
              Nch_plot = 6, init_t_len = 1, init_ch_start = 0, init_t_start = 0, figsize=(20,10)):
     """
     Visualize ECoG data 
@@ -252,7 +252,7 @@ def viz_ecog(x, t,
     
     sTlen = Slider(axTlen, '$t_{len}$', 0.1, 10, valinit=init_t_len)
     sCh = Slider(axCh, 'Chans', 0, np.shape(x)[0]-Nch_plot, valinit=init_ch_start)
-    sTstart = Slider(axTstart, '$t_{start}$', 0, 30, valinit=init_t_start)
+    sTstart = Slider(axTstart, '$t_{start}$', 0, tmax, valinit=init_t_start)
     
     sTlen.on_changed(update)
     sCh.on_changed(update)
