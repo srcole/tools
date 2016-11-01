@@ -22,9 +22,12 @@ Miscellaneous useful functions, including:
 from __future__ import division
 import numpy as np
 import scipy as sp
-import matplotlib.pyplot as plt
+
 import glob
 import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn import metrics
 
 def resample_coupling(x1, x2, couplingfn,
                       cfn_dict = {}, Nshuff=100, min_change=.1):
@@ -248,3 +251,113 @@ def load_features_general(features_filepath):
         dfs[n] = pd.read_csv(fi,index_col=0)
     df = pd.concat(dfs,axis=1)
     return df
+    
+
+def logreg_crossval_general(df, features_pred, y_dict,  y_colname='class',
+                   test_fraction = .3, N_iter = 10, random_state_offset=0,
+                   equalize_classes = False):
+    """
+    Perform logistic regression to predict the 'class' in the df from the features in features_pred
+    """
+    # Force same number of training examples in each class
+    if equalize_classes:
+        df = _equalize_training_classes(df, np.array(df['class']==y_dict.keys()[1])*1)
+
+    # Make the classes and training feature set
+    df, _, y = df_separate_example_submit(df, y_colname, y_dict)
+
+    # Select specific features to be used for prediction
+    df_feat = df[features_pred]
+    
+    # Normalize features
+    for k in df_feat.keys():
+        df_feat[k] = sp.stats.zscore(df_feat[k])
+
+    # Calculate results for multiple random initilializations
+    predicted = np.zeros(N_iter,dtype=object)
+    probs = np.zeros(N_iter,dtype=object)
+    df_weights = np.zeros(N_iter,dtype=object)
+    scores = {}
+    y_test = np.zeros(N_iter,dtype=object)
+    scores_ks = ['acc','auc','confuse','report']
+    for k in scores_ks:
+        scores[k] = np.zeros(N_iter,dtype=object)
+
+    for i in range(N_iter):
+        # Split data into training and testing
+        X_train, X_test, y_train, y_test[i] = train_test_split(df_feat, y, test_size=test_fraction, random_state=i+random_state_offset)
+        # Train a logistic regression model
+        model = LogisticRegression()
+        model.fit(X_train, y_train)
+        # Classify test data
+        predicted[i] = model.predict(X_test)
+        probs[i] = model.predict_proba(X_test)
+        # Characterize classifier performance
+        scores['acc'][i] = metrics.accuracy_score(y_test[i], predicted[i])
+        scores['auc'][i] = metrics.roc_auc_score(y_test[i], probs[i][:, 1])
+        scores['confuse'][i] = metrics.confusion_matrix(y_test[i], predicted[i])
+        scores['report'][i] = metrics.classification_report(y_test[i], predicted[i])
+        # Save classifier weights
+        df_weights[i] = pd.DataFrame(zip(df_feat.columns, np.transpose(model.coef_)))
+
+    return model, scores, df_weights
+
+
+def _equalize_training_classes(df, y):
+    """Make the same number of training examples for eyes open and eyes closed"""
+    # Find examples to keep
+    y_vals = np.unique(y)
+    N_keep = np.min((sum(y==y_vals[0]),sum(y==y_vals[1])))
+    idx_keep = np.hstack((np.where(y==y_vals[1])[0][:N_keep],np.where(y==y_vals[0])[0][:N_keep]))
+    # Filter df for these examples
+    df2 = df.reset_index()
+    df2 = df2.drop('index',1)
+    df_equal = df2.loc[idx_keep]
+    df_equal = df_equal.reset_index()
+    df_equal = df_equal.drop('index',1)
+    return df_equal
+
+
+def df_separate_example_submit(df, y_colname, y_dict):
+    df_examples = df[df[y_colname]!='None']
+    df_submit = df[df[y_colname]=='None']
+    y = df_examples[y_colname].values
+    y_dict = dict((v, k) for k, v in y_dict.iteritems())
+    y = (y==y_dict[1])*1
+    df_examples = df_examples.drop(y_colname,1)
+    df_submit = df_submit.drop(y_colname,1)
+    return df_examples, df_submit, y
+    
+
+def df_stats_general(df, y_dict, y_colname='class'):
+    """Calculate stats from features in a data frame, related to the class"""
+    # Differentiate feature dataframe and class value
+    df, _, y = df_separate_example_submit(df, y_colname, y_dict)
+    
+    
+    feats = df.keys().values
+    stats = {}
+    stats['t_stats'] = {}
+    stats['t_stats_p'] = {}
+    stats['mean_0'] = {}
+    stats['mean_1'] = {}
+    for f in feats:
+        feats = df[f]
+        feat_class0 = feats[y==0]
+        feat_class1 = feats[y==1]
+        stats['t_stats'][f], stats['t_stats_p'][f] = sp.stats.ttest_ind(feat_class0,feat_class1)
+        stats['mean_0'][f] = np.mean(feat_class0)
+        stats['mean_1'][f] = np.mean(feat_class1)
+        
+    return stats
+    
+    
+def logreg_model_general(Xtrain, y, Xtest):
+    """Perform logistic regression on training data and return
+    estimated probabilities for test data"""
+    model = LogisticRegression()
+    model = model.fit(Xtrain,y)
+    probs = model.predict_proba(Xtrain)
+    train_auc = metrics.roc_auc_score(y, probs[:, 1])
+    test_probs = model.predict_proba(Xtest)[:,1]
+    return model, train_auc, test_probs
