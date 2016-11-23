@@ -19,7 +19,7 @@ def get_html(url):
     soup = BeautifulSoup(r,"lxml")
     return soup.prettify()
 
-def extract_subtext_single(text, start_str, end_str = None, extract_len = 100):
+def extract_subtext_single(text, start_str, end_str = None, extract_len = 100, verbose = True, return_empty = True):
     """Function to extract html text I am interest in (give a start string and an end string, or length),
     tell if 1 or many matches"""
     
@@ -31,7 +31,13 @@ def extract_subtext_single(text, start_str, end_str = None, extract_len = 100):
         raise ValueError('More than 1 match found')
 
     # Clip input text to start_str
-    text = text[int(match_idx):]
+    try:
+        text = text[int(match_idx):]
+    except:
+        if return_empty:
+            return ''
+        else:
+            raise ValueError('Probably did not find a string matching the starting str')
         
     if end_str is not None:
         # Find location of end strings
@@ -39,7 +45,8 @@ def extract_subtext_single(text, start_str, end_str = None, extract_len = 100):
 
         # Throw error if more than 1 match found
         if len(end_idx) > 1:
-            print 'More than 1 match found for end_str. Taking first match'
+            if verbose:
+                print 'More than 1 match found for end_str. Taking first match'
             end_idx = end_idx[0]
         if not end_idx:
             raise ValueError('end_str not found at all')

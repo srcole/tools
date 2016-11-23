@@ -2,6 +2,7 @@
 """
 Miscellaneous functions for simulations
 
+gaussian : make a gaussian distribution along an x axis with defined mean and std
 pha2r : Create a time series that is a nonlinear mapping of phase
 simphase : simulate an oscillation and its phase by bandpass filtering white noise
 spikes2lfp : Convolve a spike train with a synaptic potential to simulate a local field potential (LFP)
@@ -11,6 +12,10 @@ from __future__ import division
 import numpy as np
 import scipy as sp
 
+def gaussian(x, mu, sig):
+    return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
+    
+    
 def pha2r(pha, method, mod_frac, firing_rate, sqprc=10.0, normstd = 1):
     '''
     Create a time-varying firing rate from a phase time series
