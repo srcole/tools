@@ -8,11 +8,13 @@ Miscellaneous functions for plotting
 4. unpair_2cond : plot to compare the distribution of two sets of values
 5. scatt_corr : plot a correlation
 6. viz_ecog : plot multiple channels of channel x time data in an interactive plot
+7. color2d : plot a matrix with values encoded in a colormap
 """
 
 import numpy as np
 import scipy as sp
 import matplotlib.pyplot as plt
+from matplotlib import cm
 from matplotlib.widgets import Slider
 
 def bar(y, yerr, xlab, ylab,
@@ -259,3 +261,35 @@ def viz_ecog(x, t, tmax = 30,
     sTstart.on_changed(update)
     
     plt.show()
+    
+    
+def color2d(X, cmap=None, clim=None, cticks=None, figsize=(8,8), color_label='', plot_title='',
+            plot_xlabel='', plot_ylabel='',
+            plot_xticks_locs=[], plot_xticks_labels=[],
+            plot_yticks_locs=[], plot_yticks_labels=[],
+            interpolation='none', fontsize_major=20, fontsize_minor=10):
+    """Plot the matrix X using a 2-dimensional color matrix
+    TODO:1. Add option to change text size and cbar ticks"""
+    if cmap is None:
+        cmap = cm.viridis
+    if clim is None:
+        clim = [None, None]
+    if cticks is None:
+        if clim is not None:
+            cticks=clim
+        
+        
+    # Plot colored matrix and colormap bar
+    plt.figure(figsize=figsize)
+    cax = plt.imshow(X, cmap=cmap, interpolation=interpolation,vmin=clim[0], vmax=clim[1])
+    cbar = plt.colorbar(cax, ticks=cticks)
+    cbar.ax.set_yticklabels(cticks,size=fontsize_minor)
+    
+    # Format plot
+    cbar.ax.set_ylabel(color_label, size=fontsize_major)
+    plt.title(plot_title, size=fontsize_major)
+    plt.ylabel(plot_ylabel, size=fontsize_major)
+    plt.xlabel(plot_xlabel, size=fontsize_major)
+    plt.yticks(plot_yticks_locs, plot_yticks_labels, size=fontsize_minor)
+    plt.xticks(plot_xticks_locs, plot_xticks_labels, size=fontsize_minor,rotation='vertical')
+    plt.tight_layout()
