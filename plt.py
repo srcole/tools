@@ -9,6 +9,7 @@ Miscellaneous functions for plotting
 5. scatt_corr : plot a correlation
 6. viz_ecog : plot multiple channels of channel x time data in an interactive plot
 7. color2d : plot a matrix with values encoded in a colormap
+8. spectrogram : plot a spectrogram using pcolormesh
 """
 
 import numpy as np
@@ -293,3 +294,12 @@ def color2d(X, cmap=None, clim=None, cticks=None, figsize=(8,8), color_label='',
     plt.yticks(plot_yticks_locs, plot_yticks_labels, size=fontsize_minor)
     plt.xticks(plot_xticks_locs, plot_xticks_labels, size=fontsize_minor,rotation='vertical')
     plt.tight_layout()
+    
+    
+def spectrogram(t, f, spec,
+                figsize=(10,4), vmin=0, vmax=5, ylim=(0,100)):
+    x_mesh, y_mesh = np.meshgrid(t, f)
+    plt.figure(figsize=figsize)
+    plt.pcolormesh(x_mesh, y_mesh, spec, cmap=cm.jet, vmin=vmin, vmax=vmax)
+    plt.ylim(ylim)
+    plt.colorbar()

@@ -17,6 +17,7 @@ Miscellaneous functions for spectral analysis
 11. plot_filter: plot the frequency respponse of a filter
 12. phaseT: calculate phase time series
 13. ampT: calculate amplitude time series
+14. spectrogram_stft: function that is pretty much redundant with sp.signal.spectrogram, but gives slightly different results
 """
 
 from __future__ import division
@@ -586,3 +587,51 @@ def ampT(x, frange, Fs, rmv_edge = False, filter_fn=None, filter_kwargs=None):
     amp = np.abs(sp.signal.hilbert(xn))
 
     return amp
+    
+
+def spectrogram_stft(x, Fs, window_size, return_complex = False):
+    """
+    Calculate the spectrogram using the short-time Fourier Transform (STFT)
+    
+    Parameters
+    ----------
+    x : np.ndarray
+        time series
+    Fs : float
+        sampling rate of x
+    window_size : int
+        Number of samples in the window for calculating a single Fourier transform
+    return_complex : bool
+        if True, the spectrogram values are complex (can calculate phase by taking angle)
+        if False, the spectrogram values are amplitude
+        
+    Returns
+    -------
+    t : np.ndarray
+        time array
+    f : np.ndarray
+        frequency array
+    spec : 2d np.ndarray
+        spectrogram    
+    """
+    
+    # Compute time array
+    t_max = len(x)/float(Fs)
+    t_x = np.arange(0,t_max,1/float(Fs)) 
+    samp_start_spec = int(np.ceil(window_size/2))
+    t_spec = t_x[samp_start_spec:samp_start_spec+len(t_x)-window_size]
+    
+    # Compute frequency array
+    f = np.arange(0,Fs/2.,Fs/float(window_size))
+    N_f = len(f)
+    
+    # iterate through time and calculate fourier coefficients
+    samp_start_max = len(x) - window_size + 1
+    spec = np.zeros((samp_start_max,N_f),dtype=complex)
+    for samp_start in range(samp_start_max):
+        spec[samp_start] = np.fft.fft(x[samp_start:samp_start + window_size]*np.hanning(window_size))[:len(f)]
+        
+    # Calculate amplitude unless complex output desired
+    if not return_complex:
+        spec = np.abs(spec)
+    return t_spec, f, spec
