@@ -57,6 +57,11 @@ def getjetrgb(N):
     from matplotlib import cm
     return cm.jet(np.linspace(0,255,N).astype(int))
     
+
+def getcmaprgb(N, cmap):
+    """Get the RGB values of N colors across the jet spectrum"""
+    return cmap(np.linspace(0,255,N).astype(int))
+    
     
 def linfit(x,y):
     mb = np.polyfit(x,y,1)
