@@ -303,3 +303,23 @@ def spectrogram(t, f, spec,
     plt.pcolormesh(x_mesh, y_mesh, spec, cmap=cm.jet, vmin=vmin, vmax=vmax)
     plt.ylim(ylim)
     plt.colorbar()
+    
+    
+def histogram(xs, bins, labels = None, figsize = (4,4),
+              xlabel='', return_ax = False):
+    plt.figure(figsize=figsize)
+    if type(xs[0]) in [list, np.ndarray]:
+        if labels is None:
+            raise ValueError('Must provide labels')
+        for i in range(len(xs)):
+            plt.hist(xs[i],bins, label=labels[i], alpha=.5)
+            plt.legend(loc='best',fontsize=10)
+    else:
+        plt.hist(xs[i],bins,color='k',alpha=0.5)
+    plt.ylabel('Count',size=15)
+    plt.xlabel(xlabel,size=15)
+    plt.yticks(size=12)
+    plt.xticks(size=12)
+    plt.tight_layout()
+    if return_ax:
+        return plt.gca()
