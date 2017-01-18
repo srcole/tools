@@ -270,7 +270,8 @@ def color2d(X, cmap=None, clim=None, cticks=None, figsize=(8,8), color_label='',
             plot_yticks_locs=[], plot_yticks_labels=[],
             interpolation='none', fontsize_major=20, fontsize_minor=10):
     """Plot the matrix X using a 2-dimensional color matrix
-    TODO:1. Add option to change text size and cbar ticks"""
+
+    Note you can put this in a subplot. it does not have to be its own figure"""
     if cmap is None:
         cmap = cm.viridis
     if clim is None:
@@ -281,7 +282,6 @@ def color2d(X, cmap=None, clim=None, cticks=None, figsize=(8,8), color_label='',
         
         
     # Plot colored matrix and colormap bar
-    plt.figure(figsize=figsize)
     cax = plt.imshow(X, cmap=cmap, interpolation=interpolation,vmin=clim[0], vmax=clim[1])
     cbar = plt.colorbar(cax, ticks=cticks)
     cbar.ax.set_yticklabels(cticks,size=fontsize_minor)

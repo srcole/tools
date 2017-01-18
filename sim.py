@@ -6,6 +6,7 @@ gaussian : make a gaussian distribution along an x axis with defined mean and st
 pha2r : Create a time series that is a nonlinear mapping of phase
 simphase : simulate an oscillation and its phase by bandpass filtering white noise
 spikes2lfp : Convolve a spike train with a synaptic potential to simulate a local field potential (LFP)
+simfiltonef : Simulate a signal with 1/f^2 noise
 """
 
 from __future__ import division
@@ -98,16 +99,16 @@ def spikes2lfp(spikes,
     return np.convolve(spikes, psp, mode='same')
     
 
-def simbrown(N, randseed = 0):
+def simbrown(N):
     """Simulate a brown noise signal (power law distribution 1/f^2)
     with N samples"""
-    np.random.seed(randseed)
     wn = np.random.randn(N)
     return np.cumsum(wn)
     
 
-def simfiltonef(T, f_range, Fs, N, samp_buffer = 10000, randseed = 0):
+def simfiltonef(T, f_range, Fs, N, samp_buffer = 10000):
     """ Simulate a band-pass filtered signal with 1/f^2 
+    Input suggestions: f_range=(2,None), Fs=1000, N=1000
     
     Parameters
     ----------
@@ -117,14 +118,36 @@ def simfiltonef(T, f_range, Fs, N, samp_buffer = 10000, randseed = 0):
         oscillation sampling rate
     f_range : 2-element array (lo,hi)
         frequency range of simulated data
+        if None: do not filter
     N : int
         order of filter
     """
-    # Generate 1/f^2 noise
-    brownN = simbrown(int(T*Fs+N*2), randseed = randseed)
-    
-    # Filter
-    nyq = Fs / 2.
-    taps = sp.signal.firwin(N, np.array(f_range) / nyq, pass_zero=False)
-    brownNf = sp.signal.filtfilt(taps, [1], brownN)
-    return brownNf[N:-N]
+
+    if f_range is None:
+        # Do not filter
+        # Generate 1/f^2 noise
+        brownN = simbrown(int(T*Fs))
+        return brownN
+    elif f_range[1] is None:
+        # High pass filter
+        # Generate 1/f^2 noise
+        brownN = simbrown(int(T*Fs+N*2))
+        # Filter
+        nyq = Fs / 2.
+        if N % 2 == 0:
+            print 'NOTE: Increased high-pass filter order by 1 in order to be odd'
+            N += 1
+
+        taps = sp.signal.firwin(N, f_range[0] / nyq, pass_zero=False)
+        brownNf = sp.signal.filtfilt(taps, [1], brownN)
+        return brownNf[N:-N]
+
+    else:
+        # Bandpass filter
+        # Generate 1/f^2 noise
+        brownN = simbrown(int(T*Fs+N*2))
+        # Filter
+        nyq = Fs / 2.
+        taps = sp.signal.firwin(N, np.array(f_range) / nyq, pass_zero=False)
+        brownNf = sp.signal.filtfilt(taps, [1], brownN)
+        return brownNf[N:-N]
