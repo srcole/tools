@@ -98,6 +98,9 @@ def scatt_2cond(x, y, ms = 12,
             returnax = False):
     if lims is None:
         lims = (np.min(np.hstack((x,y))),np.max(np.hstack((x,y))))
+        # Add buffer
+        lims_range = lims[1] - lims[0]
+        lims = (lims[0] - lims_range*.1, lims[1] + lims_range*.1)
     if ticks is None:
         ticks = lims
 
@@ -264,7 +267,7 @@ def viz_ecog(x, t, tmax = 30,
     plt.show()
     
     
-def color2d(X, cmap=None, clim=None, cticks=None, figsize=(8,8), color_label='', plot_title='',
+def color2d(X, cmap=None, clim=None, cticks=None, color_label='', plot_title='',
             plot_xlabel='', plot_ylabel='',
             plot_xticks_locs=[], plot_xticks_labels=[],
             plot_yticks_locs=[], plot_yticks_labels=[],
@@ -274,25 +277,32 @@ def color2d(X, cmap=None, clim=None, cticks=None, figsize=(8,8), color_label='',
     Note you can put this in a subplot. it does not have to be its own figure"""
     if cmap is None:
         cmap = cm.viridis
-    if clim is None:
-        clim = [None, None]
     if cticks is None:
         if clim is not None:
-            cticks=clim
-        
-        
+            cticks = clim
+
     # Plot colored matrix and colormap bar
-    cax = plt.imshow(X, cmap=cmap, interpolation=interpolation,vmin=clim[0], vmax=clim[1])
-    cbar = plt.colorbar(cax, ticks=cticks)
-    cbar.ax.set_yticklabels(cticks,size=fontsize_minor)
-    
+    if clim is not None:
+        cax = plt.imshow(X, cmap=cmap, interpolation=interpolation, vmin=clim[0], vmax=clim[1])
+        cbar = plt.colorbar(cax, ticks=cticks)
+        cbar.ax.set_yticklabels(cticks, size=fontsize_minor)
+    else:
+        cax = plt.imshow(X, cmap=cmap, interpolation=interpolation)
+        cbar = plt.colorbar(cax)
+
     # Format plot
-    cbar.ax.set_ylabel(color_label, size=fontsize_major)
-    plt.title(plot_title, size=fontsize_major)
-    plt.ylabel(plot_ylabel, size=fontsize_major)
-    plt.xlabel(plot_xlabel, size=fontsize_major)
-    plt.yticks(plot_yticks_locs, plot_yticks_labels, size=fontsize_minor)
-    plt.xticks(plot_xticks_locs, plot_xticks_labels, size=fontsize_minor,rotation='vertical')
+    if len(color_label) > 0:
+        cbar.ax.set_ylabel(color_label, size=fontsize_major)
+    if len(plot_title) > 0:
+        plt.title(plot_title, size=fontsize_major)
+    if len(plot_ylabel) > 0:
+        plt.ylabel(plot_ylabel, size=fontsize_major)
+    if len(plot_xlabel) > 0:
+        plt.xlabel(plot_xlabel, size=fontsize_major)
+    if len(plot_yticks_locs) > 0:
+        plt.yticks(plot_yticks_locs, plot_yticks_labels, size=fontsize_minor)
+    if len(plot_xticks_locs) > 0:
+        plt.xticks(plot_xticks_locs, plot_xticks_labels, size=fontsize_minor)
     plt.tight_layout()
     
     

@@ -17,6 +17,7 @@ Miscellaneous useful functions, including:
 12. addenvvar - add an environmental variable
 13. run_pdb_on_break - run python debugger when the input function breaks
 14. save_features_general - save features as done for seizure data
+15. save_object - save an object in a pickle
 """
 
 from __future__ import division
@@ -28,6 +29,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn import metrics
+import pickle
 
 def resample_coupling(x1, x2, couplingfn,
                       cfn_dict = {}, Nshuff=100, min_change=.1):
@@ -110,7 +112,7 @@ def pdf2text(filename):
 
 from datetime import datetime
 def emailme(starttime=datetime.now(), msgtxt = 'Default message',
-            usr='srcolepy', psw=np.str(np.load('c:/gh/data/misc/emailmepsw.npy')), 
+            usr='srcolepy', psw=np.str(np.load('/gh/data/misc/emailmepsw.npy')), 
             fromaddr='srcolepy@gmail.com', toaddr='scott.cole0@gmail.com'):
     """
     Adapted from: http://drewconway.com/zia/2013/3/26/u9utnymvh5ieja2plmwlwywekp37wf
@@ -229,7 +231,7 @@ def save_features_general(feature_fn, feature_kwargs,
             # Calculate features
             features_dict[n] = feature_fn(data_temp, **feature_kwargs)
         if print_progress:
-            print 'Calculating features for file '+str(n+1)+'/'+str(N)
+            print('Calculating features for file '+str(n+1)+'/'+str(N))
         
     # Combine dicts by key
     features_dict_all = {}
@@ -366,3 +368,8 @@ def logreg_model_general(Xtrain, y, Xtest):
     train_auc = metrics.roc_auc_score(y, probs[:, 1])
     test_probs = model.predict_proba(Xtest)[:,1]
     return model, train_auc, test_probs
+
+
+def save_object(obj, filename):
+    with open(filename, 'wb') as output:
+        pickle.dump(obj, output, pickle.HIGHEST_PROTOCOL)
